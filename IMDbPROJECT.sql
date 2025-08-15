@@ -133,5 +133,47 @@ GROUP BY d.id
 HAVING genre_count > 1
 ORDER BY genre_count DESC;
 
+-- Top Actor Pairs Who Frequently Co-Act--------------------------------------------
+CREATE INDEX idx_roles_movie_actor ON roles(movie_id, actor_id);
+SELECT 
+    a1.first_name AS actor1_first, 
+    a1.last_name  AS actor1_last,
+    a2.first_name AS actor2_first, 
+    a2.last_name  AS actor2_last,
+    COUNT(*) AS movies_together
+FROM (
+    SELECT movie_id
+    FROM roles
+    GROUP BY movie_id
+    HAVING COUNT(actor_id) < 20 
+) AS small_cast
+JOIN roles r1 
+    ON small_cast.movie_id = r1.movie_id
+JOIN roles r2 
+    ON small_cast.movie_id = r2.movie_id 
+    AND r1.actor_id < r2.actor_id
+JOIN actors a1 
+    ON r1.actor_id = a1.id
+JOIN actors a2 
+    ON r2.actor_id = a2.id
+GROUP BY r1.actor_id, r2.actor_id
+ORDER BY movies_together DESC
+LIMIT 10;
+
+-- Movies Without Any Genre Assigned---------------------------------------------------
+SELECT m.id, m.name
+FROM movies m
+LEFT JOIN movies_genres mg ON m.id = mg.movie_id
+WHERE mg.genre IS NULL;
+
+-- Directors Who Worked with the Highest Variety of Actors----------------------------
+SELECT d.first_name, d.last_name, COUNT(DISTINCT r.actor_id) AS unique_actors
+FROM directors d
+JOIN movies_directors md ON d.id = md.director_id
+JOIN roles r ON md.movie_id = r.movie_id
+GROUP BY d.id
+ORDER BY unique_actors DESC
+LIMIT 5;
+
 
 
